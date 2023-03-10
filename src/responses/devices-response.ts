@@ -14,6 +14,7 @@ export interface DeviceResponse{
         device: {
             manufacturerName: string;
             model: string;
+            deviceClass: string;
         };
         functions: DeviceFunctionResponse[];
     };

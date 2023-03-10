@@ -7,7 +7,9 @@ export enum DeviceFunction{
     LightPower,
     Brightness,
     FanPower,
-    FanSpeed
+    FanSpeed,
+    LightTemperature,
+    LightColor
 }
 
 /**
@@ -15,17 +17,17 @@ export enum DeviceFunction{
  * with identifiers for discovery and/or manipulation.
  */
 export const DeviceFunctions: DeviceFunctionDef[] = [
-    {
-        type: DeviceFunction.LightPower,
-        attributeId: 2,
-        functionClass: 'power',
-        functionInstanceName: 'light-power'
-    },
-    {
-        type: DeviceFunction.Brightness,
-        attributeId: 4,
-        functionClass: 'brightness'
-    },
+    // {
+    //     type: DeviceFunction.LightPower,
+    //     attributeId: 2,
+    //     functionClass: 'power',
+    //     functionInstanceName: 'light-power'
+    // },
+    // {
+    //     type: DeviceFunction.Brightness,
+    //     attributeId: 4,
+    //     functionClass: 'brightness'
+    // },
     {
         type: DeviceFunction.FanPower,
         attributeId: 3,
@@ -37,6 +39,27 @@ export const DeviceFunctions: DeviceFunctionDef[] = [
         attributeId: 6,
         functionClass: 'fan-speed',
         functionInstanceName: 'fan-speed'
+    },
+    // TODO: handle fan light and bulb light power
+    {
+        type: DeviceFunction.LightPower,
+        attributeId: 1,
+        functionClass: 'power'
+    },
+    {
+        type: DeviceFunction.Brightness,
+        attributeId: 2,
+        functionClass: 'brightness'
+    },
+    {
+        type: DeviceFunction.LightTemperature,
+        attributeId: 3,
+        functionClass: 'color-temperature'
+    },
+    {
+        type: DeviceFunction.LightColor,
+        attributeId: 4,
+        functionClass: 'color-rgb'
     }
 ];
 
