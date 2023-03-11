@@ -2,7 +2,6 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, Service, Charact
 import { TokenService } from './services/token.service';
 import { AccountService } from './services/account.service';
 import { DiscoveryService } from './services/discovery.service';
-import { DeviceService } from './services/device.service';
 import { isConfigValid } from './config';
 
 /**
@@ -14,7 +13,6 @@ export class HubspacePlatform implements DynamicPlatformPlugin {
     public readonly Service: typeof Service = this.api.hap.Service;
     public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
     public readonly accountService!: AccountService;
-    public readonly deviceService!: DeviceService;
 
     private readonly _discoveryService!: DiscoveryService;
     private _isInitialized = false;
@@ -34,7 +32,6 @@ export class HubspacePlatform implements DynamicPlatformPlugin {
         this._discoveryService = new DiscoveryService(this);
         // Configure global services
         this.accountService = new AccountService(log);
-        this.deviceService = new DeviceService(this);
 
         // Configure callbacks
         this.accountService.onAccountLoaded(this._discoveryService.discoverDevices.bind(this._discoveryService));

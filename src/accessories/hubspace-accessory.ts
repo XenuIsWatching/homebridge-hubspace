@@ -43,7 +43,7 @@ export abstract class HubspaceAccessory{
         this.service = accessory.getService(service as WithUUID<typeof Service>) || this.accessory.addService(service as Service);
 
         this.log = platform.log;
-        this.deviceService = platform.deviceService;
+        this.deviceService = new DeviceService(this.platform);
         this.device = accessory.context.device;
 
         this.accessory.getService(this.platform.Service.AccessoryInformation)!

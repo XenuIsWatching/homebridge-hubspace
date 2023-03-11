@@ -8,6 +8,8 @@ import { convertNumberToHexReverse } from '../utils';
 import { isAferoError } from '../responses/afero-error-response';
 import { DeviceFunction, getDeviceFunctionDef } from '../models/device-functions';
 
+import AsyncLock from 'async-lock';
+
 /**
  * Service for interacting with devices
  */
@@ -17,6 +19,7 @@ export class DeviceService{
         baseURL: Endpoints.API_BASE_URL
     });
 
+    private lock = new AsyncLock({timeout: 5000});
 
     constructor(private readonly _platform: HubspacePlatform){ }
 
@@ -31,20 +34,23 @@ export class DeviceService{
         let response: AxiosResponse;
 
         try{
-            response = await this._httpClient.post(`accounts/${this._platform.accountService.accountId}/devices/${deviceId}/actions`, {
-                type: 'attribute_write',
-                attrId: functionDef.attributeId,
-                data: this.getDataValue(value)
+            await this.lock.acquire('accountServerLock', async () => {
+                response = await this._httpClient.post(`accounts/${this._platform.accountService.accountId}/devices/${deviceId}/actions`, {
+                    type: 'attribute_write',
+                    attrId: functionDef.attributeId,
+                    data: this.getDataValue(value)
+                });
+
+                //TODO: anyway to get this out of the mutex and keep ts happy?
+                if(response.status === 200) return;
+
+                this._platform.log.error(`Remote server did not accept new value ${value} for device (ID: ${deviceId}).`);
             });
         }catch(ex){
             this.handleError(<AxiosError>ex);
 
             return;
         }
-
-        if(response.status === 200) return;
-
-        this._platform.log.error(`Remote server did not accept new value ${value} for device (ID: ${deviceId}).`);
     }
 
     /**
@@ -58,24 +64,29 @@ export class DeviceService{
         let deviceStatus: DeviceStatusResponse;
 
         try{
-            const response =
-            await this._httpClient
-                .get<DeviceStatusResponse>(`accounts/${this._platform.accountService.accountId}/devices/${deviceId}?expansions=attributes`);
-            deviceStatus = response.data;
+            // Acquire the lock, because if multiple threads are accessing the server at the same time, a "The device is not available"
+            // error can happen
+            return await this.lock.acquire('accountServerLock', async () => {
+                const response = await this._httpClient.get<DeviceStatusResponse>(
+                    `accounts/${this._platform.accountService.accountId}/devices/${deviceId}?expansions=attributes`);
+                deviceStatus = response.data;
+
+                //TODO: anyway to get this out of the mutex and keep ts happy?
+                const attributeResponse = deviceStatus.attributes.find(a => a.id === functionDef.attributeId);
+
+                if(!attributeResponse){
+                    this._platform.log.error(
+                        `Failed to find value for ${functionDef.functionInstanceName} for device (device ID: ${deviceId})`);
+                    return undefined;
+                }
+
+                return attributeResponse.value;
+            });
         }catch(ex){
             this.handleError(<AxiosError>ex);
 
             return undefined;
         }
-
-        const attributeResponse = deviceStatus.attributes.find(a => a.id === functionDef.attributeId);
-
-        if(!attributeResponse){
-            this._platform.log.error(`Failed to find value for ${functionDef.functionInstanceName} for device (device ID: ${deviceId})`);
-            return undefined;
-        }
-
-        return attributeResponse.value;
     }
 
     /**
