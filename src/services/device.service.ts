@@ -96,6 +96,33 @@ export class DeviceService{
     }
 
     /**
+     * Gets a single attribute with its value and last-updated timestamp
+     * @param deviceId ID of a device
+     * @param attributeId Attribute ID to fetch
+     * @returns Attribute data including timestamp, or undefined if unavailable
+     */
+    async getAttribute(deviceId: string, attributeId: string): Promise<{value: string, updatedTimestamp: number} | undefined>{
+        let deviceStatus: DeviceStatusResponse;
+
+        try{
+            const response =
+            await this._httpClient
+                .get<DeviceStatusResponse>(`accounts/${this._platform.accountService.accountId}/devices/${deviceId}?expansions=attributes,state`);
+            deviceStatus = response.data;
+        }catch(ex){
+            this.handleError(<AxiosError>ex);
+            return undefined;
+        }
+
+        if(!deviceStatus.deviceState.available) return undefined;
+
+        const attr = deviceStatus.attributes.find(a => a.id.toString() === attributeId);
+        if(!attr) return undefined;
+
+        return { value: attr.value, updatedTimestamp: attr.updatedTimestamp };
+    }
+
+    /**
      * Gets a value for attribute as integer
      * @param deviceId ID of a device
      * @param deviceFunction Function to get value for

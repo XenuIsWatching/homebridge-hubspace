@@ -40,16 +40,16 @@ export class SprinklerAccessory extends HubspaceAccessory{
                 .onGet(() => this.platform.api.hap.Characteristic.ValveType.IRRIGATION);
         }
         if(this.supportsFunction(DeviceFunction.Timer)) {
-            // this.services[0].getCharacteristic(this.platform.Characteristic.RemainingDuration)
-            //     .onGet(() => this.getRemainingDuration(DeviceFunction.Spigot1));
+            this.services[0].getCharacteristic(this.platform.Characteristic.RemainingDuration)
+                .onGet(() => this.getRemainingDuration(DeviceFunction.Spigot1));
             this.services[0].getCharacteristic(this.platform.Characteristic.SetDuration)
                 .onGet(() => this.getMaxDuration(DeviceFunction.Spigot1))
                 .onSet((value) => this.setMaxDuration(DeviceFunction.Spigot1, value));
 
-            // this.services[1].getCharacteristic(this.platform.Characteristic.RemainingDuration)
-            //     .onGet(() => this.getRemainingDuration(DeviceFunction.Spigot2));
+            this.services[1].getCharacteristic(this.platform.Characteristic.RemainingDuration)
+                .onGet(() => this.getRemainingDuration(DeviceFunction.Spigot2));
             this.services[1].getCharacteristic(this.platform.Characteristic.SetDuration)
-                .onGet(() => this.getRemainingDuration(DeviceFunction.Spigot2))
+                .onGet(() => this.getMaxDuration(DeviceFunction.Spigot2))
                 .onSet((value) => this.setMaxDuration(DeviceFunction.Spigot2, value));
         }
 
@@ -120,18 +120,26 @@ export class SprinklerAccessory extends HubspaceAccessory{
     }
 
     private async getRemainingDuration(functionType: DeviceFunction): Promise<CharacteristicValue>{
-        // Try to get the value
-        const func = getDeviceFunctionDef(this.device.functions, DeviceFunction.Timer, functionType);
-        const value = await this.deviceService.getValueAsInteger(this.device.deviceId, func.values[0].deviceValues[0].key);
+        // Remaining time is computed from the toggle attribute's updatedTimestamp.
+        // The Afero API's 'timer' attribute does not update in real-time; instead we track
+        // how long ago the valve was opened and subtract from the configured max-on-time.
+        const toggleFunc = getDeviceFunctionDef(this.device.functions, DeviceFunction.Toggle, functionType);
+        const toggleAttr = await this.deviceService.getAttribute(
+            this.device.deviceId, toggleFunc.values[0].deviceValues[0].key);
 
-        // If the value is not defined then show 'Not Responding'
-        if(isNullOrUndefined(value)){
+        if(isNullOrUndefined(toggleAttr)){
             throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         }
 
-        this.log.debug(`${this.device.name}: Triggered GET Remaining Duration: ${value}`);
-        // Otherwise return the value
-        return value!;
+        // Valve is off — no time remaining
+        if(toggleAttr!.value !== '1') return 0;
+
+        const maxSeconds = await this.getMaxDuration(functionType) as number;
+        const elapsed = (Date.now() - toggleAttr!.updatedTimestamp) / 1000;
+        const remaining = Math.min(Math.max(0, Math.round(maxSeconds - elapsed)), 3600);
+
+        this.log.debug(`${this.device.name}: Triggered GET Remaining Duration: ${remaining}s`);
+        return remaining;
     }
 
     private async setMaxDuration(functionType: DeviceFunction, value: CharacteristicValue): Promise<void>{
