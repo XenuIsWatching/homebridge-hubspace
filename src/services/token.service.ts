@@ -1,6 +1,13 @@
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 import { TokenResponse } from '../responses/token-response';
 import { Endpoints } from '../api/endpoints';
+
+interface PersistedToken {
+    refreshToken: string;
+    refreshTokenExpiration: string;
+}
 
 /**
  * Service for managing JWT tokens
@@ -16,15 +23,21 @@ export class TokenService{
     private _accessTokenExpiration?: Date;
     private _refreshToken?: string;
     private _refreshTokenExpiration?: Date;
+    private readonly _tokenFilePath: string;
 
     /**
      * Creates a new instance of token service
      * @param _username Account username
      * @param _password Account password
+     * @param storagePath Homebridge storage path for persisting refresh token
      */
     private constructor(
         private readonly _username: string,
-        private readonly _password: string) { }
+        private readonly _password: string,
+        storagePath: string) {
+        this._tokenFilePath = path.join(storagePath, '.hubspace-token.json');
+        this.loadPersistedToken();
+    }
 
 
     /**
@@ -38,9 +51,10 @@ export class TokenService{
      * Initializes {@link TokenService}
      * @param _username Account username
      * @param _password Account password
+     * @param storagePath Homebridge storage path for persisting refresh token
      */
-    public static init(username: string, password: string): void{
-        TokenService._instance = new TokenService(username, password);
+    public static init(username: string, password: string, storagePath: string): void{
+        TokenService._instance = new TokenService(username, password, storagePath);
     }
 
     public async getToken(): Promise<string | undefined>{
@@ -122,6 +136,8 @@ export class TokenService{
 
         this._accessTokenExpiration = new Date(currentDate.getTime() + response.expires_in * 1000);
         this._refreshTokenExpiration = new Date(currentDate.getTime() + response.refresh_expires_in * 1000);
+
+        this.persistToken();
     }
 
     /**
@@ -132,6 +148,29 @@ export class TokenService{
         this._refreshToken = undefined;
         this._accessTokenExpiration = undefined;
         this._refreshTokenExpiration = undefined;
+    }
+
+    private persistToken(): void{
+        if(!this._refreshToken || !this._refreshTokenExpiration) return;
+        try{
+            const data: PersistedToken = {
+                refreshToken: this._refreshToken,
+                refreshTokenExpiration: this._refreshTokenExpiration.toISOString(),
+            };
+            fs.writeFileSync(this._tokenFilePath, JSON.stringify(data), 'utf8');
+        }catch(_){ /* non-fatal */ }
+    }
+
+    private loadPersistedToken(): void{
+        try{
+            const raw = fs.readFileSync(this._tokenFilePath, 'utf8');
+            const data: PersistedToken = JSON.parse(raw);
+            const expiration = new Date(data.refreshTokenExpiration);
+            if(expiration > new Date()){
+                this._refreshToken = data.refreshToken;
+                this._refreshTokenExpiration = expiration;
+            }
+        }catch(_){ /* no persisted token, will authenticate with credentials */ }
     }
 
     /**
