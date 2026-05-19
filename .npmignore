@@ -3,8 +3,12 @@ src/
 *.py
 __pycache__/
 .claude/
+.github/
+.vscode/
 homebridge-test-config/
 node_modules/
+nodemon.json
+CLAUDE.md
 *.tgz
 *.log
 .eslintcache
