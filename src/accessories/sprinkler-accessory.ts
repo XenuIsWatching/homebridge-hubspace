@@ -11,7 +11,7 @@ export class SprinklerAccessory extends HubspaceAccessory{
      * @param accessory Platform accessory
      */
     constructor(platform: HubspacePlatform, accessory: PlatformAccessory) {
-        super(platform, accessory, [new platform.Service.Valve('1', '1'), new platform.Service.Valve('2', '2'), platform.Service.Battery]);
+        super(platform, accessory, [new platform.Service.Valve('Spigot 1', '1'), new platform.Service.Valve('Spigot 2', '2'), platform.Service.Battery]);
 
         this.configureSprinkler();
 
