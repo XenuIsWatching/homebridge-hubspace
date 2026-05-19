@@ -48,9 +48,9 @@ export abstract class HubspaceAccessory{
         for (const service of services) {
             const svc = service as Service;
             const cls = service as WithUUID<typeof Service>;
+            const uuid = svc.UUID ?? cls.UUID;
             const initializedService =
-                (svc.subtype ? accessory.getServiceById(svc.UUID ?? cls.UUID, svc.subtype) : undefined) ||
-                accessory.getService(cls) ||
+                accessory.services.find(s => s.UUID === uuid && s.subtype === svc.subtype) ||
                 this.accessory.addService(service as Service);
             this.services.push(initializedService);
         }
