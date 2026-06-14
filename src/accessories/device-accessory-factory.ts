@@ -7,6 +7,7 @@ import { HubspaceAccessory } from './hubspace-accessory';
 import { LightAccessory } from './light-accessory';
 import { OutletAccessory } from './outlet-accessory';
 import { SprinklerAccessory } from './sprinkler-accessory';
+import { GlassDoorAccessory } from './glass-door-accessory';
 
 import { DeviceFunction } from '../models/device-functions';
 
@@ -28,6 +29,8 @@ export function createAccessoryForDevice(device: Device, platform: HubspacePlatf
             return new OutletAccessory(platform, accessory);
         case DeviceType.Sprinkler:
             return new SprinklerAccessory(platform, accessory);
+        case DeviceType.GlassDoor:
+            return new GlassDoorAccessory(platform, accessory);
         default:
             throw new Error(`Accessory of type '${device.type}' is not supported.`);
     }

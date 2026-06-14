@@ -5,7 +5,8 @@ export enum DeviceType{
     Light = 'light',
     Fan = 'fan',
     Outlet = 'power-outlet',
-    Sprinkler = 'sprinkler'
+    Sprinkler = 'sprinkler',
+    GlassDoor = 'glass-door'
 }
 
 /**
@@ -23,6 +24,8 @@ export function getDeviceTypeForKey(key: string): DeviceType | undefined{
             return DeviceType.Outlet;
         case 'water-timer':
             return DeviceType.Sprinkler;
+        case 'glass-door':
+            return DeviceType.GlassDoor;
         default:
             return undefined;
     }

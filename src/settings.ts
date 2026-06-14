@@ -6,4 +6,4 @@ export const PLATFORM_NAME = 'Hubspace';
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = 'homebridge-hubspace';
+export const PLUGIN_NAME = '@xenuiswatching/homebridge-hubspace';
